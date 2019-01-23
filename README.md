@@ -25,6 +25,7 @@ Links
 -----
 
 Schema standard: [json-schema.org][1]
+
 Validation library: [JSON Schema Validator][2]
 
 [1]: https://json-schema.org/
