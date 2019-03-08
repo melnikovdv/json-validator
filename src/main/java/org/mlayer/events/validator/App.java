@@ -3,6 +3,7 @@ package org.mlayer.events.validator;
 import org.apache.commons.io.IOUtils;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
+import org.everit.json.schema.loader.SchemaClient;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 
@@ -13,29 +14,33 @@ import java.io.InputStream;
 
 class App {
 
+    private String schemaFolder;
     private String dataPath;
     private String schemaPath;
 
-    public App(String dataPath, String schemaPath) {
-        this.dataPath = dataPath;
-        this.schemaPath = schemaPath;
-        printParams(dataPath, schemaPath);
+    public App(String schemaFolder, String schemaRelativePath, String dataPath) {
+        this.schemaFolder = schemaFolder.replace("\\", "/");
+        this.dataPath = dataPath.replace("\\", "/");
+        this.schemaPath = schemaRelativePath.replace("\\", "/");
+        printParams();
     }
 
-    private void printParams(String dataPath, String schemaPath) {
-        System.out.println("schemaPath = " + schemaPath);
+    private void printParams() {
+        System.out.println("schemaFolder = " + schemaFolder);
+        System.out.println("schemaRelativePath = " + schemaPath);
         System.out.println("dataPath = " + dataPath);
         System.out.println();
     }
 
     public static void main(String[] args) {
-        if (args.length >= 2) {
-            String schemaPath = args[0];
-            String dataPath = args[1];
-            App app = new App(dataPath, schemaPath);
+        if (args.length >= 3) {
+            String schemaFolder = args[0];
+            String schemaRelativePath = args[1];
+            String dataPath = args[2];
+            App app = new App(schemaFolder, schemaRelativePath, dataPath);
             app.validate();
         } else {
-            System.out.println("Help: java -jar validator.jar \"path_to_schema\" \"path_to_json\"");
+            System.out.println("Help: java -jar validator.jar \"path_to_folder_with_schemas\" \"relative_path_to_schema\" \"path_to_json\"");
         }
     }
 
@@ -83,10 +88,16 @@ class App {
 
     private Schema getSchema() {
         try {
-            InputStream inputStream = new FileInputStream(schemaPath);
+            InputStream inputStream = new FileInputStream(schemaFolder + schemaPath);
             String s = IOUtils.toString(inputStream, "utf-8");
             JSONObject jsonSchema = new JSONObject(s);
-            return SchemaLoader.load(jsonSchema);
+            SchemaLoader schemaLoader = SchemaLoader.builder()
+                    .schemaClient(SchemaClient.classPathAwareClient())
+                    .schemaJson(jsonSchema)
+                    .resolutionScope("file:///" + schemaFolder)
+                    .build();
+
+            return schemaLoader.load().build();
         } catch (FileNotFoundException e) {
             showErrorAndExit("no such file: " + schemaPath);
         } catch (IOException e) {
