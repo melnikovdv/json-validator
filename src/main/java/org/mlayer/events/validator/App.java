@@ -60,6 +60,8 @@ class App {
     }
 
     private void printErrors(ValidationException exception) {
+        System.out.println(exception.getMessage());
+
         exception.getCausingExceptions().stream()
                 .filter(e -> e.getCausingExceptions().isEmpty())
                 .map(ValidationException::getMessage)
